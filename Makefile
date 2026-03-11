@@ -1,12 +1,12 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help config check install dev dev-daemon start stop clean docker-init docker-start docker-stop docker-logs docker-logs-frontend docker-logs-gateway
+.PHONY: help config check install dev dev-daemon start stop clean docker-init docker-start docker-stop docker-logs docker-logs-gateway
 
 help:
 	@echo "DeerFlow Development Commands:"
 	@echo "  make config          - Generate local config files (aborts if config already exists)"
 	@echo "  make check           - Check if all required tools are installed"
-	@echo "  make install         - Install all dependencies (frontend + backend)"
+	@echo "  make install         - Install backend dependencies"
 	@echo "  make setup-sandbox   - Pre-pull sandbox container image (recommended)"
 	@echo "  make dev             - Start all services in development mode (with hot-reloading)"
 	@echo "  make dev-daemon      - Start all services in background (daemon mode)"
@@ -19,7 +19,6 @@ help:
 	@echo "  make docker-start    - Start Docker services (mode-aware from config.yaml, localhost:2026)"
 	@echo "  make docker-stop     - Stop Docker development services"
 	@echo "  make docker-logs     - View Docker development logs"
-	@echo "  make docker-logs-frontend - View Docker frontend logs"
 	@echo "  make docker-logs-gateway - View Docker gateway logs"
 
 config:
@@ -29,7 +28,6 @@ config:
 	fi
 	@cp config.example.yaml config.yaml
 	@test -f .env || cp .env.example .env
-	@test -f frontend/.env || cp frontend/.env.example frontend/.env
 
 # Check required tools
 check:
@@ -39,8 +37,6 @@ check:
 install:
 	@echo "Installing backend dependencies..."
 	@cd backend && uv sync
-	@echo "Installing frontend dependencies..."
-	@cd frontend && pnpm install
 	@echo "✓ All dependencies installed"
 	@echo ""
 	@echo "=========================================="
@@ -97,13 +93,6 @@ stop:
 	@echo "Stopping all services..."
 	@-pkill -f "langgraph dev" 2>/dev/null || true
 	@-pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true
-	@-pkill -f "next dev" 2>/dev/null || true
-	@-pkill -f "next start" 2>/dev/null || true
-	@-pkill -f "next-server" 2>/dev/null || true
-	@-pkill -f "next-server" 2>/dev/null || true
-	@-nginx -c $(PWD)/docker/nginx/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
-	@sleep 1
-	@-pkill -9 nginx 2>/dev/null || true
 	@echo "Cleaning up sandbox containers..."
 	@-./scripts/cleanup-containers.sh deer-flow-sandbox 2>/dev/null || true
 	@echo "✓ All services stopped"
@@ -136,8 +125,5 @@ docker-stop:
 docker-logs:
 	@./scripts/docker.sh logs
 
-# View Docker development logs
-docker-logs-frontend:
-	@./scripts/docker.sh logs --frontend
 docker-logs-gateway:
 	@./scripts/docker.sh logs --gateway
